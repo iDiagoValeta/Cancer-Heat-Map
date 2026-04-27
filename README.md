@@ -12,17 +12,17 @@ El pipeline carga el dataset desde Hugging Face Hub, entrena un modelo ViT para 
   - `2`: Normal
 - Augmentations solo en entrenamiento y normalizacion con `torchvision.transforms`.
 - Fine-tuning parcial: se entrena el **classifier** y las **ultimas 4 capas** del encoder de ViT.
-- Evaluacion con:
-  - `classification_report`
-  - `confusion_matrix`, guardada como imagen.
+- Evaluacion con `classification_report` y `confusion_matrix`.
+- Visualizacion de attention maps del ViT en un grid comparativo (ecografia original vs heatmap).
 
 ## Estructura del repositorio
 - `config.py`: configuracion central de dataset, modelo, hiperparametros, rutas y labels.
 - `dataset.py`: carga del dataset de Hugging Face, transforms y dataloaders.
 - `model_utils.py`: construccion y carga del modelo ViT.
-- `train.py`: entrenamiento y guardado del mejor checkpoint.
-- `evaluate.py`: evaluacion del checkpoint y generacion de metricas/figuras.
-- `results/`: salidas generadas, por ejemplo `confusion_matrix.png`.
+- `train.py`: entrenamiento con early stopping, logging a CSV y guardado del mejor checkpoint.
+- `evaluate.py`: evaluacion del checkpoint, reporte de clasificacion y matriz de confusion.
+- `heatmap.py`: genera un grid comparativo (original + heatmap) con imagenes aleatorias del dataset.
+- `results/`: salidas generadas (`confusion_matrix.png`, `classification_report.txt`, `heatmaps/grid.png`).
 
 ## Requisitos
 Instala las dependencias con:
@@ -75,8 +75,9 @@ Cada entrenamiento genera `checkpoints/training_log.csv` con columnas `epoch, tr
 ```
 
 y genera:
-- reporte de clasificacion en consola
+- reporte de clasificacion en consola y en `./results/classification_report.txt`
 - matriz de confusion en `./results/confusion_matrix.png`
+- analisis de falsos negativos/positivos para las 3 clases
 
 Ejecuta:
 
@@ -89,13 +90,14 @@ python evaluate.py
 `heatmap.py` visualiza que zonas de la imagen activaron el diagnostico del modelo usando las attention maps del ViT.
 
 ```bash
-python heatmap.py --image ruta/imagen.jpg
-python heatmap.py --image ruta/imagen.jpg --checkpoint ./checkpoints/best_model.pth
+python heatmap.py
+python heatmap.py --n 12
+python heatmap.py --checkpoint ./checkpoints/best_model.pth
 ```
 
-Genera `results/heatmap_<nombre>.png` con la imagen original y el mapa de atencion superpuesto, e imprime la prediccion con confianza por clase.
+Descarga `--n` imagenes aleatorias del dataset, aplica el modelo y guarda un unico grid en `results/heatmaps/grid.png` con la ecografia original y el mapa de atencion superpuesto para cada muestra.
 
-![Heatmap de ejemplo](results/heatmap_muestra.png)
+![Grid de heatmaps](results/heatmaps/grid.png)
 
 ## Notas sobre el modelo
 - Se usa `ViTForImageClassification.from_pretrained(..., ignore_mismatched_sizes=True, output_attentions=True)`.

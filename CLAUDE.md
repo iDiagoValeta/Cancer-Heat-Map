@@ -20,9 +20,10 @@ python train.py --resume ./checkpoints/best_model.pth
 # Evaluar el checkpoint guardado
 python evaluate.py
 
-# Generar heatmap de atención para una imagen
-python heatmap.py --image ruta/imagen.jpg
-python heatmap.py --image ruta/imagen.jpg --checkpoint ./checkpoints/best_model.pth
+# Generar grid de heatmaps con imágenes aleatorias del dataset
+python heatmap.py
+python heatmap.py --n 12
+python heatmap.py --checkpoint ./checkpoints/best_model.pth
 ```
 
 ## Arquitectura
@@ -38,7 +39,7 @@ Pipeline de clasificación de imágenes de cáncer de mama con ViT (`google/vit-
 - `model_utils.py` — construye el ViT con fine-tuning parcial: solo `classifier` y las últimas 4 capas del encoder (`vit.encoder.layer[-4:]`) tienen `requires_grad=True`. `load_trained_model()` carga desde checkpoint y pone el modelo en `eval()`. Lanza `FileNotFoundError` con mensaje claro si el checkpoint no existe.
 - `train.py` — loop de entrenamiento con `ReduceLROnPlateau` (patience=5, min_lr=1e-8) y early stopping (`--early_stopping_patience`, default 10). Guarda checkpoint completo (incluye `scheduler_state_dict` y `args`) solo cuando mejora `val_acc`. Escribe métricas por época en `checkpoints/training_log.csv`. Soporta `--resume` para continuar desde un checkpoint.
 - `evaluate.py` — carga `checkpoints/best_model.pth` y genera reporte de clasificación (guardado en `results/classification_report.txt`) + `results/confusion_matrix.png` + análisis de seguridad para las 3 clases. Puede ejecutarse de forma independiente sin re-entrenar.
-- `heatmap.py` — genera visualización de attention maps del ViT sobre una imagen de entrada. Usa `output_attentions=True` del modelo, promedia sobre las cabezas de atención del último layer (`ATTENTION_LAYER_INDEX`) y superpone el mapa sobre la imagen con `HEATMAP_ALPHA`. Guarda en `results/heatmap_<nombre>.png` e imprime predicción con confianza por clase.
+- `heatmap.py` — descarga N imágenes aleatorias del dataset y genera un único grid comparativo en `results/heatmaps/grid.png`. Cada muestra ocupa dos columnas: la ecografía original y el heatmap de atención superpuesto (promedio de cabezas del layer `ATTENTION_LAYER_INDEX`, opacidad `HEATMAP_ALPHA`). El título de cada celda muestra la etiqueta real y la predicción con confianza.
 
 ## Notas importantes
 
