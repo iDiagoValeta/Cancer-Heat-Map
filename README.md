@@ -62,6 +62,7 @@ Argumentos disponibles:
 - `--batch_size` (default: valor de `config.BATCH_SIZE`)
 - `--lr` (default: valor de `config.LEARNING_RATE`)
 - `--weight_decay` (default: valor de `config.WEIGHT_DECAY`)
+- `--early_stopping_patience` (default: `10`): numero de epocas consecutivas sin mejora en `val_acc` tras las cuales se detiene el entrenamiento automaticamente. El mejor checkpoint ya estara guardado en ese momento.
 
 ## Evaluacion
 `evaluate.py` carga el checkpoint:

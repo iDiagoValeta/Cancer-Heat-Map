@@ -93,6 +93,7 @@ def main(args):
 
     os.makedirs(args.save_dir, exist_ok=True)
     best_val_acc = 0.0
+    epochs_no_improve = 0
 
     print("Iniciando entrenamiento")
 
@@ -108,6 +109,7 @@ def main(args):
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            epochs_no_improve = 0
             torch.save({
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -115,6 +117,11 @@ def main(args):
                 "val_acc": best_val_acc,
             }, model_utils.get_best_model_path(args.save_dir))
             print(f"Guardado con Val Acc: {best_val_acc:.2f}%")
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= args.early_stopping_patience:
+                print(f"Early stopping en época {epoch} (sin mejora por {args.early_stopping_patience} épocas consecutivas)")
+                break
 
 
 if __name__ == "__main__":
@@ -124,6 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=config.BATCH_SIZE)
     parser.add_argument("--lr", type=float, default=config.LEARNING_RATE)
     parser.add_argument("--weight_decay", type=float, default=config.WEIGHT_DECAY)
+    parser.add_argument("--early_stopping_patience", type=int, default=10)
 
     args = parser.parse_args()
     main(args)
