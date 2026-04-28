@@ -1,6 +1,6 @@
 import torch
 
-DATASET_NAME = "ShivamRaisharma/breastcancer"
+DATASET_NAME = "kiran06/breast_cancer_us"
 
 CHECKPOINT_DIR = "./checkpoints"
 BEST_MODEL_FILENAME = "best_model.pth"
