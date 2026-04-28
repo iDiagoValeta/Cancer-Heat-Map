@@ -103,6 +103,8 @@ def main(args):
         ckpt = torch.load(args.resume, map_location=device)
         model.load_state_dict(ckpt["model_state_dict"])
         optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        for pg in optimizer.param_groups:
+            pg["lr"] = args.lr
         if "scheduler_state_dict" in ckpt:
             scheduler.load_state_dict(ckpt["scheduler_state_dict"])
         best_val_acc = ckpt["val_acc"]
