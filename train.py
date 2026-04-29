@@ -81,7 +81,7 @@ def main(args):
     train_loader, val_loader = dataset.create_dataloaders(batch_size=args.batch_size)
     model = model_utils.get_vit_model()
 
-    weights = torch.tensor([1.0, 2.0, 1.0]).to(device)
+    weights = torch.tensor([1.0, 3.0, 1.0]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weights, label_smoothing=0.1)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -94,6 +94,7 @@ def main(args):
 
     os.makedirs(args.save_dir, exist_ok=True)
     best_val_acc = 0.0
+    best_val_loss = float("inf")
     epochs_no_improve = 0
     start_epoch = 0
 
@@ -107,9 +108,13 @@ def main(args):
             pg["lr"] = args.lr
         if "scheduler_state_dict" in ckpt:
             scheduler.load_state_dict(ckpt["scheduler_state_dict"])
-        best_val_acc = ckpt["val_acc"]
+        best_val_acc = ckpt.get("val_acc", ckpt.get("val_recall", 0.0))
+        best_val_loss = ckpt.get("val_loss", float("inf"))
         start_epoch = ckpt["epoch"]
-        print(f"Reanudando desde época {start_epoch} con Val Acc: {best_val_acc:.2f}%")
+        print(
+            f"Reanudando desde época {start_epoch} con Val Acc: {best_val_acc:.2f}% "
+            f"y Val Loss: {best_val_loss:.4f}"
+        )
 
     log_path = os.path.join(args.save_dir, "training_log.csv")
     log_exists = os.path.exists(log_path)
@@ -140,8 +145,10 @@ def main(args):
         ])
         log_file.flush()
 
-        if val_acc > best_val_acc:
+        is_acc_tie = np.isclose(val_acc, best_val_acc, atol=1e-8)
+        if val_acc > best_val_acc or (is_acc_tie and val_loss < best_val_loss):
             best_val_acc = val_acc
+            best_val_loss = val_loss
             epochs_no_improve = 0
             torch.save({
                 "epoch": epoch,
@@ -149,9 +156,13 @@ def main(args):
                 "optimizer_state_dict": optimizer.state_dict(),
                 "scheduler_state_dict": scheduler.state_dict(),
                 "val_acc": best_val_acc,
+                "val_loss": best_val_loss,
                 "args": vars(args),
             }, model_utils.get_best_model_path(args.save_dir))
-            print(f"Guardado con Val Acc: {best_val_acc:.2f}%")
+            print(
+                f"Guardado con Val Acc: {best_val_acc:.2f}% "
+                f"(Val Loss: {best_val_loss:.4f})"
+            )
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= args.early_stopping_patience:
